@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semantsum"
+dynamic = ["dependencies"]
+version = "0.0.1"
+requires-python = ">=3.10"
+authors = [
+  {name = "Martin Dočekal"},
+]
+description = "Summarization package for SemANT project."
+readme = "README.md"
+keywords = ["semANT", "summarization"]
+
+[project.urls]
+Homepage = "https://semant.cz/"
+Repository = "https://github.com/DCGM/semANT"
+
+[project.scripts]
+semantsum = "semantsum.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["semantsum*"]
+exclude = ["tests*"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
