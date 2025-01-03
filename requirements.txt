@@ -1,6 +1,7 @@
-classconfig~=1.0.7
+classconfig~=1.0.8
 Jinja2~=3.1.4
 segmentedstring~=1.0.1
 openai~=1.57.0
 inquirer~=3.4.0
 json-repair~=0.30.2
+python-slugify~=8.0.4

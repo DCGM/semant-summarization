@@ -1,0 +1,30 @@
+name: OpenAI Query Multi  # Name of the summarization.
+summary_type: query-based multi-document # Summarization type.
+provider: openai # Provider of the summarization.
+description: Performs query-based multi-document summarization. # Description of the summarization.
+version: 1.0.0 # Version of the summarization workflow.
+recommended_num_texts: 10 # Recommended number of texts for summarization.
+summarizer: # Summarizer configuration.
+  cls: OpenAIQueryBasedMultiDocSummarizer  # name of class that is subclass of Summarizer
+  config: # configuration for defined class
+    api:  # OpenAI API configuration.
+      api_key:  # OpenAI API key.
+      base_url: # Base URL for API.
+    model: gpt-4o-mini # Name of model that should be used.
+    prompt_builder: # Prompt builder. Available fields are: query, text.
+      template: |  # Jinja2 template for prompt sequence. It can be a string, dictionary with keys 'segment_name' and 'template', or a sequence of messages with role and content. If you use dictionary all parts will be concatenated and SegmentedString will be used for the rendered result.
+        Vytvoř souhrn následujících výsledků vyhledávání, který je relevantní k dotazu uživatele. Cituj zdroje s použitím id výsledku v hranatých závorkách. Snaž se ve svém souhrnu použít všechny výsledky vyhledávání. Souhrn by měl být výstižný, stručný a měl by obsahovat klíčové informace z výsledků.
+        Použij současnou češtinu, přestože výsledky vyhledávání ji používat nemusí.
+        
+        Uživatel zadal do vyhledávače historických dokumentů dotaz:
+        
+        {{query}}
+        
+        Tento dotaz mu vrátil následující výsledky:
+        
+        {% for t in text %}Výsledek [{{loop.index}}]: {{t}}
+        {% endfor %}
+      role_key_form: role # How the dict key would be named in built prompt sequence. Doesn't effect key name in template config.
+      content_key_form: content # How the dict key would be named in built prompt sequence. Doesn't effect key name in template config.
+    structured: # Structured summary configuration.
+    structured_2_str: '{{label}}: {{content}}' # Jinja template for converting item of structured summary to string (available fields: label, content).

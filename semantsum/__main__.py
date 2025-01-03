@@ -1,28 +1,20 @@
 from argparse import ArgumentParser
 
 import inquirer
-from classconfig import Config, ConfigurableFactory, ConfigurableSubclassFactory
+from classconfig import Config
 from classconfig.classes import subclasses, sub_cls_from_its_name
+from slugify import slugify
 
+from semantsum import init_summarizer, list_summarizers
 from semantsum.api import API
-from semantsum.openai import OpenAIWithPromptBuilder, OpenAIAPI
-from semantsum.summarizer import Summarizer, QueryBasedMultiDocSummarizer, SingleDocSummarizer
+from semantsum.constants import CONFIG_DIR
+from semantsum.openai import OpenAIAPI
+from semantsum.summarizer import Summarizer, QueryBasedMultiDocSummarizer, SingleDocSummarizer, SummarizerWorkflow
 
 
-class OpenAISummarizerWorkflow:
-    summarizer: OpenAIWithPromptBuilder = ConfigurableSubclassFactory(OpenAIWithPromptBuilder,
-                                                                      "Configuration for summarizer.")
-
-    def __init__(self, summarizer: OpenAIWithPromptBuilder):
-        self.summarizer = summarizer
-
-    def __call__(self, *args, **kwargs):
-        print(self.summarizer(*args, **kwargs))
-
-
-def run_openai_summarizer(args):
+def run_summarizer(args):
     """
-    Runs OpenAI summarizer.
+    Runs summarizer.
 
     :param args: Parsed arguments.
     """
@@ -30,47 +22,41 @@ def run_openai_summarizer(args):
     # create summarizer from configuration
     if args.api_config is not None:
         api_config = Config(OpenAIAPI).load(args.api_config)
-        api = ConfigurableFactory(OpenAIAPI).create(api_config)
-        omit = {
-            "summarizer": {"": {"api"}}
-        }
-        config = Config(OpenAISummarizerWorkflow, omit=omit).load(args.config)
-        summarizer_workflow = ConfigurableFactory(OpenAISummarizerWorkflow, omit=omit).create(config)
-        summarizer_workflow.args["summarizer"].args["api"] = api
-        summarizer_workflow = summarizer_workflow.create()
+        summarizer = init_summarizer(args.config,
+                                     api_key=api_config["api_key"],
+                                     api_base_url=api_config.get("base_url", None))
     else:
-        config = Config(OpenAISummarizerWorkflow).load(args.config)
-        summarizer_workflow = ConfigurableFactory(OpenAISummarizerWorkflow).create(config)
+        summarizer = init_summarizer(args.config)
 
-    # get template fields from user
-    template_fields = {}
-    if isinstance(summarizer_workflow.summarizer, QueryBasedMultiDocSummarizer):
+    summary = None
+    if isinstance(summarizer, QueryBasedMultiDocSummarizer):
         print("Query-based multi-document summarizer.")
         # get query from user
         query = input("Enter query: ")
 
         # get documents from user
-        docs = []
+        text = []
         while True:
             print("")
-            doc = input("Enter document. Leave empty to finish: ")
-            if doc == "":
+            t = input("Enter text. Leave empty to finish: ")
+            if t == "":
                 break
-            docs.append(doc)
+            text.append(t)
 
-        # summarize
-        template_fields["query"] = query
-        template_fields["docs"] = docs
+        summary = summarizer.summ_str(
+            text=text,
+            query=query
+        )
 
-    elif isinstance(summarizer_workflow.summarizer, SingleDocSummarizer):
+    elif isinstance(summarizer, SingleDocSummarizer):
         print("Single document summarizer.")
-        doc = input("Enter document: ")
-        template_fields["doc"] = doc
+        text = input("Enter text: ")
+        summary = summarizer.summ_str([text])
     else:
         raise ValueError("Unsupported summarizer.")
 
-    # summarize
-    summarizer_workflow(**template_fields)
+    print("\nSummary:")
+    print(summary)
 
 
 def create_summarizer_config(args):
@@ -80,7 +66,6 @@ def create_summarizer_config(args):
     :param args: Parsed arguments.
     """
     # make sure that all models are imported
-    import semantsum.openai
 
     conv_subclasses = sorted(set(c.__name__ for c in subclasses(Summarizer)))
     summarizer = inquirer.prompt([
@@ -89,13 +74,47 @@ def create_summarizer_config(args):
                       choices=conv_subclasses,
                       )
     ])["summarizer"]
+    summarizer_cls = sub_cls_from_its_name(Summarizer, summarizer)
+    name = None
+    while name is None or name in list_summarizers():
+        if name is not None:
+            print("Name already exists. Please choose another name.")
+        name = inquirer.text(message="Enter configuration name")
+
+    additional_args = {}
+    if hasattr(summarizer_cls, "TYPE"):
+        additional_args["default"] = summarizer_cls.TYPE
+    summary_type = inquirer.text(message="Enter summary type", **additional_args)
+    provider = inquirer.prompt([inquirer.List(
+        "provider",
+        message="Provider of the summarization",
+        choices=["openai", "ollama", "local"]
+    )])["provider"]
+    model = inquirer.text(message="Model name for user-friendly identification")
+    description = inquirer.text(message="Enter configuration description")
+    version = inquirer.text(message="Enter configuration version", default="1.0.0")
+    recommended_num_texts = inquirer.text(message="Recommended number of texts for summarization", default=1,
+                                            validate=lambda _, x: x.isdigit())
+    recommended_num_texts = int(recommended_num_texts)
+
+    if args.path is None:
+        suggested_file_name = slugify(name, separator="_")
+        file_name = inquirer.text(message="Enter file name without extension", default=suggested_file_name)
+        args.path = CONFIG_DIR / f"{file_name}.yaml"
 
     with open(args.path, "w") as f:
         config = Config(
-            OpenAISummarizerWorkflow,
+            SummarizerWorkflow,
             file_override_user_defaults={
+                "name": name,
+                "summary_type": summary_type,
+                "provider": provider,
+                "model": model,
+                "description": description,
+                "version": version,
+                "recommended_num_texts": recommended_num_texts,
                 "summarizer": {
-                    "cls": sub_cls_from_its_name(Summarizer, summarizer),
+                    "cls": summarizer_cls,
                     "config": {}
                 }
             })
@@ -109,7 +128,6 @@ def create_api_config(args):
     :param args: Parsed arguments.
     """
     # make sure that all models are imported
-    import semantsum.openai
 
     conv_subclasses = sorted(set(c.__name__ for c in subclasses(API)))
     api = inquirer.prompt([
@@ -140,23 +158,39 @@ def create_config(args):
     if config_type == "summarization":
         create_summarizer_config(args)
     elif config_type == "API":
+        if args.path is None:
+            raise ValueError("Path to the configuration file must be provided.")
         create_api_config(args)
     else:
         raise ValueError("Unsupported configuration type.")
+
+
+def available(args):
+    """
+    Lists available configurations.
+
+    :param args: Parsed arguments.
+    """
+    all_configs = list_summarizers()
+    for name, config in all_configs.items():
+        print(f"{name} ({config['provider']})")
 
 
 def main():
     parser = ArgumentParser(description="Summarizer for SemANT project.")
     subparsers = parser.add_subparsers()
 
-    run_openai_summarizer_parser = subparsers.add_parser("run_openai_summarizer", help="Runs OpenAI summarizer.")
-    run_openai_summarizer_parser.add_argument("config", help="Path to the configuration file.")
-    run_openai_summarizer_parser.add_argument("--api_config", help="Path to the API configuration file. If not provided, API configuration will be read from the configuration file.", default=None)
-    run_openai_summarizer_parser.set_defaults(func=run_openai_summarizer)
+    run_summarizer_parser = subparsers.add_parser("run_summarizer", help="Runs summarizer.")
+    run_summarizer_parser.add_argument("config", help="Path to the configuration file or name of the configuration.")
+    run_summarizer_parser.add_argument("--api_config", help="Path to the API configuration file. If not provided, API configuration will be read from the configuration file.", default=None)
+    run_summarizer_parser.set_defaults(func=run_summarizer)
 
-    create_config_parser = subparsers.add_parser("create_config", help="Creates configuration empty configuration file for specified summarizer.")
-    create_config_parser.add_argument("path", help="Path to the configuration file.")
+    create_config_parser = subparsers.add_parser("create_config", help="Creates empty configuration file for specified summarizer.")
+    create_config_parser.add_argument("--path", help="Path to the configuration file. If not provided it will be saved to the default configuration directory.", default=None)
     create_config_parser.set_defaults(func=create_config)
+
+    create_config_parser = subparsers.add_parser("available", help="Lists available configurations.")
+    create_config_parser.set_defaults(func=available)
 
     args = parser.parse_args()
 
