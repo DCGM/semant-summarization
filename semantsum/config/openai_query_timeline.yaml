@@ -24,8 +24,8 @@ summarizer: # Summarizer configuration.
         
         {% for t in text %}Výsledek [{{loop.index}}]: {{t}}
         {% endfor %}
-      role_key_form: role # How the dict key would be named in built prompt sequence. Doesn't effect key name in template config.
-      content_key_form: content # How the dict key would be named in built prompt sequence. Doesn't effect key name in template config.
+      role_key_form: role # How the dict key would be named in built prompt sequence. Doesn't affect key name in template config.
+      content_key_form: content # How the dict key would be named in built prompt sequence. Doesn't affect key name in template config.
     structured: # Structured summary configuration.
       summary_name: timeline  # Name of the summary field. (e.g., timeline)
       summary_description: # Description of the summary field.

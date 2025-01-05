@@ -12,8 +12,8 @@ class PromptBuilder:
         voluntary=True
     )
 
-    role_key_form: str = ConfigurableValue("How the dict key would be named in built prompt sequence. Doesn't effect key name in template config.", user_default="role", voluntary=True)
-    content_key_form: str = ConfigurableValue("How the dict key would be named in built prompt sequence. Doesn't effect key name in template config.", user_default="content", voluntary=True)
+    role_key_form: str = ConfigurableValue("How the dict key would be named in built prompt sequence. Doesn't affect key name in template config.", user_default="role", voluntary=True)
+    content_key_form: str = ConfigurableValue("How the dict key would be named in built prompt sequence. Doesn't affect key name in template config.", user_default="content", voluntary=True)
 
     def __init__(self, template: Union[str | dict[str, str] | list[dict[str, str]]], role_key_form: str = "role",
                  content_key_form: str = "content"):

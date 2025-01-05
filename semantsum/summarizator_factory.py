@@ -62,6 +62,10 @@ def init_summarizer(config: str | PathLike | dict, api_key: Optional[str] = None
     :raises ValueError: if configuration is not found
 
     """
+
+    # make sure that all models are imported
+    import semantsum.openai  # noqa
+
     path_to_config = None
     # load YAML
     if not isinstance(config, dict):

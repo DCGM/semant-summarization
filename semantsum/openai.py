@@ -115,7 +115,7 @@ class OpenAIWithPromptBuilder(APIBasedSummarizer):
                                               user_default="{{label}}: {{content}}", validator=StringValidator())
 
     def __init__(self, api: OpenAIAPI, model: str, prompt_builder: PromptBuilder,
-                 structured: Optional[StructuredSchema] = None, structured_2_str: str = "{label}: {content}"):
+                 structured: Optional[StructuredSchema] = None, structured_2_str: str = "{{label}}: {{content}}"):
         self.api = api
         self.model = model
         self.prompt_builder = prompt_builder

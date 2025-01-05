@@ -17,6 +17,6 @@ summarizer: # Summarizer configuration.
         Použij současnou češtinu, přestože výsledky vyhledávání ji používat nemusí.
         
         {{text}}
-      role_key_form: role # How the dict key would be named in built prompt sequence. Doesn't effect key name in template config.
-      content_key_form: content # How the dict key would be named in built prompt sequence. Doesn't effect key name in template config.
+      role_key_form: role # How the dict key would be named in built prompt sequence. Doesn't affect key name in template config.
+      content_key_form: content # How the dict key would be named in built prompt sequence. Doesn't affect key name in template config.
     structured_2_str: '{{label}}: {{content}}' # Jinja template for converting item of structured summary to string (available fields: label, content).
