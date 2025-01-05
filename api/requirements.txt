@@ -1,0 +1,13 @@
+asyncpg
+pydantic
+fastapi
+uvicorn[standard]
+python-multipart
+aiopath
+aiofiles
+semant-summarization @ git+https://github.com/DCGM/semant-summarization.git#egg=semant-summarization
+
+#SQLAlchemy[asyncio]
+#passlib~=1.7.4
+#python-jose[cryptography]
+#bcrypt
