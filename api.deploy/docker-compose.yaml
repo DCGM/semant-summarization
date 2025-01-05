@@ -1,0 +1,13 @@
+services:
+  summarization-api:
+    restart: always
+    build:
+      context: .
+      target: backend
+      dockerfile: Dockerfile
+      args:
+        - now=$now
+        - repo=$repo
+        - branch=$branch
+    env_file:
+      - .env
