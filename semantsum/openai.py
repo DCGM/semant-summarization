@@ -2,7 +2,7 @@ from typing import Optional, Union, Sequence
 
 import jinja2
 from classconfig import ConfigurableValue, ConfigurableFactory, ConfigurableMixin
-from classconfig.validators import StringValidator, AnyValidator, IsNoneValidator
+from classconfig.validators import StringValidator, AnyValidator, IsNoneValidator, BoolValidator
 from json_repair import json_repair
 from openai import OpenAI
 
@@ -113,15 +113,48 @@ class OpenAIWithPromptBuilder(APIBasedSummarizer):
     structured: Optional[StructuredSchema] = ConfigurableFactory(StructuredSchema, "Structured summary configuration.", voluntary=True)
     structured_2_str: str = ConfigurableValue("Jinja template for converting item of structured summary to string (available fields: label, content).",
                                               user_default="{{label}}: {{content}}", validator=StringValidator())
+    chat: bool = ConfigurableValue("If True the chat endpoint will be used, otherwise the completions endpoint will be used.",
+                                   user_default=True,
+                                   voluntary=True,
+                                   validator=BoolValidator())
 
     def __init__(self, api: OpenAIAPI, model: str, prompt_builder: PromptBuilder,
-                 structured: Optional[StructuredSchema] = None, structured_2_str: str = "{{label}}: {{content}}"):
+                 structured: Optional[StructuredSchema] = None, structured_2_str: str = "{{label}}: {{content}}",
+                 chat: bool = True):
         self.api = api
         self.model = model
         self.prompt_builder = prompt_builder
         self.structured = structured
         self.jinja = jinja2.Environment()
         self.structured_2_str = self.jinja.from_string(structured_2_str)
+        self.chat = chat
+
+        if self.structured is not None and not self.chat:
+            raise ValueError("Structured summary is only supported with chat endpoint.")
+
+    def request(self, messages: Union[str, list[dict[str, str]]], response_format: Optional[dict] = None) -> str:
+        """
+        Sends request to the API.
+
+        :param messages: messages for the API or simple string prompt
+        :param response_format: response format
+        :return: response from the API
+        """
+
+        if self.chat:
+            return self.api.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                response_format=response_format
+            ).choices[0].message.content
+        else:
+            if not isinstance(messages, str):
+                raise ValueError("When using non chat endpoint, messages must be a string.")
+
+            return self.api.client.completions.create(
+                model=self.model,
+                prompt=messages
+            ).choices[0].text
 
     def __call__(self, template_fields: dict) -> Union[str, list[tuple[Optional[str], str]]]:
         """
@@ -136,21 +169,12 @@ class OpenAIWithPromptBuilder(APIBasedSummarizer):
         if self.structured is not None:
             response_format = self.structured.generate_json_schema()
 
-        if isinstance(template, str):
+        messages = template
+        if isinstance(template, str) and self.chat:
             # segmented string or plain string
-            res = self.api.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "user", "content": template}
-                ],
-                response_format=response_format
-            ).choices[0].message.content
-        else:
-            res = self.api.client.chat.completions.create(
-                model=self.model,
-                messages=template,
-                response_format=response_format
-            ).choices[0].message.content
+            messages = [{"role": "user", "content": template}]
+
+        res = self.request(messages, response_format)
 
         if self.structured is not None:
             return self.structured.parse_response(res)
