@@ -1,5 +1,5 @@
-# SemANTSum
-This is a repository for summarization built as a part of the SemANT project.
+# Textjuicer - SemANTSum
+This is a repository for summarization built as a part of the SemANT project. Textjuicer includes semantsum python package and REST API server both contained in this repository. Further, several language models finetuned for summarization are available from Huggingface. The models are compatible with Transformers library and Ollama.
 
 ## Configuration
 The package is built in a way that makes every model fully loadable from a configuration file. The configuration file is a YAML file that contains all the necessary information to load the model.
