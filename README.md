@@ -52,4 +52,11 @@ openai_query (openai)
 openai_query_timeline (openai)
 openai_query_topic (openai)
 openai_single (openai)
+ollama_query_tiny_llama (ollama)
 ```
+
+## Overview of models on Hugging Face
+List of models available on Hugging Face:
+
+- `https://huggingface.co/BUT-FIT/csmpt-7B-RAGsum`
+- `https://huggingface.co/BUT-FIT/CSTinyLLama-1.2B-RAGsum`
