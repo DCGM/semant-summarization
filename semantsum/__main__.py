@@ -66,6 +66,8 @@ def create_summarizer_config(args):
     :param args: Parsed arguments.
     """
     # make sure that all models are imported
+    import semantsum.openai # noqa
+    import semantsum.local_hf # noqa
 
     conv_subclasses = sorted(set(c.__name__ for c in subclasses(Summarizer)))
     summarizer = inquirer.prompt([
@@ -90,7 +92,6 @@ def create_summarizer_config(args):
         message="Provider of the summarization",
         choices=["openai", "ollama", "local"]
     )])["provider"]
-    model = inquirer.text(message="Model name for user-friendly identification")
     description = inquirer.text(message="Enter configuration description")
     version = inquirer.text(message="Enter configuration version", default="1.0.0")
     recommended_num_texts = inquirer.text(message="Recommended number of texts for summarization", default=1,
@@ -109,7 +110,6 @@ def create_summarizer_config(args):
                 "name": name,
                 "summary_type": summary_type,
                 "provider": provider,
-                "model": model,
                 "description": description,
                 "version": version,
                 "recommended_num_texts": recommended_num_texts,

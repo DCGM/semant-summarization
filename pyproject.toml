@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 61.0"]
+requires = ["setuptools >= 61.0"] # torch is required for flash-attn
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -16,7 +16,7 @@ keywords = ["semANT", "summarization"]
 
 [project.urls]
 Homepage = "https://semant.cz/"
-Repository = "https://github.com/DCGM/semANT"
+Repository = "https://github.com/DCGM/semant-summarization"
 
 [project.scripts]
 semantsum = "semantsum.__main__:main"

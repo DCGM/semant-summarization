@@ -1,4 +1,4 @@
-name: Ollama Query Multi MPT # Name of the summarization.
+name: Ollama Query Multi CSTinyLLama # Name of the summarization.
 summary_type: query-based multi-document # Summarization type.
 provider: ollama # Provider of the summarization.
 description: Performs query-based multi-document summarization. # Description of the summarization.

@@ -65,6 +65,7 @@ def init_summarizer(config: str | PathLike | dict, api_key: Optional[str] = None
 
     # make sure that all models are imported
     import semantsum.openai  # noqa
+    import semantsum.local_hf  # noqa
 
     path_to_config = None
     # load YAML
