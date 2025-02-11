@@ -20,7 +20,7 @@ The package is built in a way that makes every model fully loadable from a confi
 You can use `create_config` argument to create a configuration file using the configuration builder:
 
 ```bash
-./run.sh create_config path_to_config.yaml
+./run.py create_config --path path_to_config.yaml
 ```
 
 ## How to add a new summarization model
