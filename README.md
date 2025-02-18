@@ -73,3 +73,12 @@ List of models available on Hugging Face:
 
 - `https://huggingface.co/BUT-FIT/csmpt-7B-RAGsum`
 - `https://huggingface.co/BUT-FIT/CSTinyLLama-1.2B-RAGsum`
+
+### Ollama notes
+Models can be used with Ollama API after pulling them from Hugging Face. For example:
+
+```bash
+ollama pull hf.co/BUT-FIT/csmpt-7B-RAGsum
+```
+
+We tested our models with Ollama version **0.5.7**.
